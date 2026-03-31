@@ -1,0 +1,23 @@
+{
+  "name": "configuration-language-parser",
+  "version": "1.0.0",
+  "main": "config-lang.js",
+  "scripts": {
+    "test": "node test-config-lang.js",
+    "examples": "node examples.js",
+    "build": "webpack"
+  },
+  "keywords": [
+    "config",
+    "parser",
+    "configuration",
+    "language"
+  ],
+  "author": "Generated Implementation",
+  "license": "MIT",
+  "description": "A JavaScript parser for the Configuration Language specification",
+  "devDependencies": {
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1"
+  }
+}
