@@ -8,6 +8,8 @@ I blogged a bit about the experience here.
 
 [Lessons Learned from Vibe-Coding a Configuration Parser](https://deanebarker.net/tech/blog/vibe-lessons/)
 
+The license is public domain ("Unlicense") since I didn't actually write anything other than the spec (the extended prompt, really), and none of this is very original anyway.
+
 Deane Barker    
 March 2026
 
