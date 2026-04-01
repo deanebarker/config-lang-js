@@ -1,3 +1,21 @@
+**Note:**
+
+This code was written by Claude Code to conform with a specification here:
+
+[Configuration Language: Specification](https://deanebarker.net/tech/config-lang/).
+
+I blogged a bit about the experience here.
+
+[Lessons Learned from Vibe-Coding a Configuration Parser](https://deanebarker.net/tech/blog/vibe-lessons/)
+
+The license is public domain ("Unlicense") since I didn't actually write anything other than the spec (the extended prompt, really), and none of this is very original anyway.
+
+Deane Barker    
+March 2026
+
+---
+
+
 # Configuration Language Parser
 
 A JavaScript implementation of the Configuration Language specification from [https://deanebarker.net/tech/config-lang/](https://deanebarker.net/tech/config-lang/).
