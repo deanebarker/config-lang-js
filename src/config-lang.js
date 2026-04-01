@@ -65,16 +65,18 @@ class Command {
    * Creates a Command instance
    * @param {string} name - The command name
    * @param {Argument[]} args - Array of arguments
+   * @param {string} target - Optional target name
    */
-  constructor(name, args = []) {
+  constructor(name, args = [], target = null) {
     Command.validateName(name);
     this.name = name;
     this.arguments = args || [];
+    this.target = target;
   }
 
   /**
    * Parses a command from source string
-   * @param {string} source - Source string like "command -arg1:value1 -arg2:value2"
+   * @param {string} source - Source string like "command -arg1:value1 -arg2:value2" or "command -arg1:value1 => target"
    * @param {Object} tokenMap - Map of token names to values for substitution
    * @returns {Command} Parsed command
    */
@@ -84,7 +86,21 @@ class Command {
       throw new Error("Command source cannot be empty");
     }
 
-    const tokens = this.tokenize(trimmed);
+    // Extract target if present (=> syntax)
+    let target = null;
+    let sourceWithoutTarget = trimmed;
+
+    const arrowIndex = trimmed.indexOf("=>");
+    if (arrowIndex !== -1) {
+      const targetPart = trimmed.substring(arrowIndex + 2).trim();
+      if (targetPart) {
+        target = targetPart;
+        Command.validateName(target);
+        sourceWithoutTarget = trimmed.substring(0, arrowIndex).trim();
+      }
+    }
+
+    const tokens = this.tokenize(sourceWithoutTarget);
     const commandName = tokens[0].value;
 
     Command.validateName(commandName);
@@ -117,7 +133,7 @@ class Command {
       }
     }
 
-    return new Command(commandName, args);
+    return new Command(commandName, args, target);
   }
 
   /**

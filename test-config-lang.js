@@ -561,5 +561,70 @@ runner.test("Command source property handles whitespace trimming", () => {
   assertEqual(cmd.source, "test -arg:value");
 });
 
+// Target tests
+runner.test("Command with target", () => {
+  const cmd = Command.fromSource("deploy -env:production => production_server");
+  assertEqual(cmd.name, "deploy");
+  assertEqual(cmd.target, "production_server");
+  assertEqual(cmd.arguments.length, 1);
+  assertEqual(cmd.arguments[0].key, "env");
+});
+
+runner.test("Command without target has null target", () => {
+  const cmd = Command.fromSource("deploy -env:production");
+  assertEqual(cmd.name, "deploy");
+  assertEqual(cmd.target, null);
+});
+
+runner.test("Command target with only command name", () => {
+  const cmd = Command.fromSource("cleanup => cleanup_server");
+  assertEqual(cmd.name, "cleanup");
+  assertEqual(cmd.target, "cleanup_server");
+  assertEqual(cmd.arguments.length, 0);
+});
+
+runner.test("Command target with multiple arguments", () => {
+  const cmd = Command.fromSource("backup -database:users -path:/tmp => backup_dest");
+  assertEqual(cmd.name, "backup");
+  assertEqual(cmd.target, "backup_dest");
+  assertEqual(cmd.arguments.length, 2);
+});
+
+runner.test("Command target validation invalid name", () => {
+  assertThrows(
+    () => Command.fromSource("deploy -env:prod => 123invalid"),
+    "Invalid command name"
+  );
+});
+
+runner.test("CommandSet parses commands with targets", () => {
+  const source = `deploy -env:production => prod_server
+backup -path:/tmp => backup_server`;
+  const cs = new CommandSet(source);
+
+  assertEqual(cs.commands.length, 2);
+  assertEqual(cs.commands[0].target, "prod_server");
+  assertEqual(cs.commands[1].target, "backup_server");
+});
+
+runner.test("CommandSet handles mixed commands with and without targets", () => {
+  const source = `deploy -env:production => prod_server
+cleanup
+backup -path:/tmp`;
+  const cs = new CommandSet(source);
+
+  assertEqual(cs.commands.length, 3);
+  assertEqual(cs.commands[0].target, "prod_server");
+  assertEqual(cs.commands[1].target, null);
+  assertEqual(cs.commands[2].target, null);
+});
+
+runner.test("Command constructor with target", () => {
+  const cmd = new Command("test", [new Argument("arg", "value")], "target_name");
+  assertEqual(cmd.name, "test");
+  assertEqual(cmd.target, "target_name");
+  assertEqual(cmd.arguments.length, 1);
+});
+
 // Run all tests
 runner.run().catch(console.error);

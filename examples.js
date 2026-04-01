@@ -146,4 +146,25 @@ if (backupCommand) {
   );
 }
 
+// Example 6: Targets
+console.log("\n=== Example 6: Targets ===");
+const example6 = `
+deploy -env:staging => staging_server
+deploy -env:production -force => production_server
+backup -database:users => backup_storage
+cleanup => local_server
+`;
+
+const cs6 = new CommandSet(example6);
+console.log("Commands with targets:");
+cs6.commands.forEach((cmd) => {
+  console.log(`${cmd.name}:`);
+  cmd.arguments.forEach((arg) => {
+    console.log(`  ${arg.key}: "${arg.value}"`);
+  });
+  if (cmd.target) {
+    console.log(`  → target: "${cmd.target}"`);
+  }
+});
+
 console.log("\nConfiguration Language Parser examples completed!");

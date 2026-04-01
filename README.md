@@ -72,6 +72,26 @@ const commandSet = new CommandSet(config);
 // Indented arguments are merged with the command
 ```
 
+### Targets
+
+```javascript
+const config = `
+deploy -env:production => prod_server
+backup -database:users => backup_storage
+cleanup => local_server
+`;
+
+const commandSet = new CommandSet(config);
+// Targets are available in the command.target property
+commandSet.commands.forEach((cmd) => {
+  console.log(`${cmd.name} -> ${cmd.target}`);
+});
+// Output:
+// deploy -> prod_server
+// backup -> backup_storage
+// cleanup -> local_server
+```
+
 ## API Reference
 
 ### CommandSet
@@ -100,12 +120,13 @@ Represents a single command with arguments.
 
 #### Constructor
 
-- `new Command(name: string, args?: Argument[])` - Creates a new command
+- `new Command(name: string, args?: Argument[], target?: string)` - Creates a new command
 
 #### Properties
 
 - `name: string` - Command name
 - `arguments: Argument[]` - Array of command arguments
+- `target: string|null` - Optional target name specified with `=> target_name` syntax
 
 #### Static Methods
 
@@ -143,6 +164,13 @@ Represents a key-value argument pair.
 - Arguments without values default to `"true"`
 - Arguments can be on the same line or indented on following lines
 - Duplicate argument keys within a command are not allowed
+
+### Targets
+
+- Targets are optional and specified at the end of a command using `=> target_name`
+- Target names follow the same naming rules as commands and arguments
+- Only one target per command is allowed
+- Targets are stored in the `target` property of the Command object
 
 ### Tokens
 
@@ -202,6 +230,7 @@ This implementation fully complies with the Configuration Language specification
 - ✅ Duplicate argument detection
 - ✅ Order preservation for commands and arguments
 - ✅ Programmatic command construction
+- ✅ Optional target specification with `=>` syntax
 - ✅ All specification examples pass tests
 
 ## Error Handling
