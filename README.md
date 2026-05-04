@@ -110,6 +110,23 @@ commandSet.commands.forEach((cmd) => {
 // cleanup -> local_server
 ```
 
+### Extracting Pragmas
+
+```javascript
+const { extractPragmas } = require("./config-lang.js");
+
+const source = `
+# PRAGMA foo
+#pragma bar Baz
+# 		PrAgMa a,b,C
+
+deploy -env:production
+`;
+
+const pragmas = extractPragmas(source);
+// => ["foo", "bar", "baz", "a", "b", "c"]
+```
+
 ## API Reference
 
 ### CommandSet
@@ -166,6 +183,57 @@ Represents a key-value argument pair.
 #### Static Methods
 
 - `Argument.fromSource(source: string): Argument` - Parses argument from source text like "-key:value"
+
+### extractPragmas(source)
+
+Standalone, pure function that extracts pragma tokens from the top of a multi-line string. Independent of the `CommandSet` parser — does not consume the source or alter it in any way.
+
+#### Parameters
+
+- `source: string` - Multi-line string to scan
+
+#### Returns
+
+- `string[]` - Array of lower-cased pragma tokens, in the order they appear
+
+#### Pragma Line Format
+
+A pragma line consists of:
+
+- `#` (pound sign)
+- Optional whitespace
+- The literal `pragma` (any casing — `pragma`, `PRAGMA`, `PrAgMa`, etc.)
+- Mandatory whitespace
+- One or more tokens, separated by commas and/or whitespace
+
+#### Rules
+
+- Pragma lines must appear at the **top** of the source.
+- Blank or whitespace-only lines are skipped (they do not end the search).
+- The first non-blank line that is **not** a pragma line ends the search; any pragma-shaped lines after that point are ignored.
+- All returned tokens are lower-cased; original casing is discarded.
+
+#### Examples
+
+```javascript
+extractPragmas("# PRAGMA foo");
+// => ["foo"]
+
+extractPragmas("#pragma bar Baz");
+// => ["bar", "baz"]
+
+extractPragmas("# \t\tPrAgMa a,b,C");
+// => ["a", "b", "c"]
+
+extractPragmas(`
+# pragma foo
+# pragma bar, baz
+
+deploy -env:production
+# pragma ignored
+`);
+// => ["foo", "bar", "baz"]
+```
 
 ## Syntax Rules
 
