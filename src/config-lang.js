@@ -224,10 +224,51 @@ class CommandSet {
   constructor(source = "") {
     this.commands = [];
     this.tokens = {};
+    this._listeners = {};
 
     if (source) {
       this.parse(source);
     }
+  }
+
+  /**
+   * Registers a handler for a named event.
+   * @param {string} eventName - Event name (e.g. "config-lang:before-line-parsed")
+   * @param {(event: {type: string, detail: object}) => void} handler - Receives an event with a mutable `detail`
+   */
+  addEventListener(eventName, handler) {
+    if (typeof handler !== "function") {
+      throw new Error("Event handler must be a function");
+    }
+    if (!this._listeners[eventName]) {
+      this._listeners[eventName] = [];
+    }
+    this._listeners[eventName].push(handler);
+  }
+
+  /**
+   * Removes a previously-registered handler.
+   */
+  removeEventListener(eventName, handler) {
+    const handlers = this._listeners[eventName];
+    if (!handlers) return;
+    this._listeners[eventName] = handlers.filter((h) => h !== handler);
+  }
+
+  /**
+   * Dispatches an event to all registered handlers. Handlers may mutate
+   * `detail` to influence subsequent parsing.
+   * @returns {{type: string, detail: object}} The event object after handlers ran
+   */
+  _dispatchEvent(eventName, detail) {
+    const event = { type: eventName, detail };
+    const handlers = this._listeners[eventName];
+    if (handlers) {
+      for (const handler of handlers) {
+        handler(event);
+      }
+    }
+    return event;
   }
 
   /**
@@ -284,6 +325,9 @@ class CommandSet {
     let currentLine = "";
 
     for (let line of lines) {
+      const event = this._dispatchEvent("config-lang:before-line-parsed", { line });
+      line = event.detail.line;
+
       // Skip comments and blank lines
       if (line.trim().startsWith("#") || line.trim() === "") {
         continue;
@@ -408,4 +452,43 @@ class CommandSet {
   }
 }
 
-export { CommandSet, Command, Argument };
+/**
+ * Extracts pragma tokens from the top of a source string.
+ *
+ * Pragma lines must appear at the top of the input (blank lines allowed
+ * between them) and follow the form:
+ *   #<optional whitespace>pragma<whitespace><comma- or space-delimited tokens>
+ * The keyword "pragma" is case-insensitive. Returned tokens are lower-cased.
+ * Searching stops at the first non-blank line that is not a pragma line.
+ *
+ * @param {string} source - Multi-line string to scan
+ * @returns {string[]} Array of lower-cased pragma tokens
+ */
+function extractPragmas(source) {
+  if (typeof source !== "string") {
+    throw new Error("Source must be a string");
+  }
+
+  const pragmas = [];
+  const pragmaRegex = /^\s*#\s*pragma\s+(.+)$/i;
+
+  for (const line of source.split("\n")) {
+    if (line.trim() === "") {
+      continue;
+    }
+
+    const match = line.match(pragmaRegex);
+    if (!match) {
+      break;
+    }
+
+    const tokens = match[1].split(/[,\s]+/).filter((t) => t.length > 0);
+    for (const token of tokens) {
+      pragmas.push(token.toLowerCase());
+    }
+  }
+
+  return pragmas;
+}
+
+export { CommandSet, Command, Argument, extractPragmas };
