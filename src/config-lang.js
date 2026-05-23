@@ -283,13 +283,24 @@ class CommandSet {
     this.commands = [];
     this.tokens = {};
 
-    const lines = source.split("\n");
-    const processedLines = this.preprocessLines(lines);
+    const rawLines = source.split("\n");
 
-    // Split into commands section and tokens section
+    // Fire the before-line-parsed event for every raw line so handlers can
+    // transform any line — including token value lines — before parsing.
+    const lines = rawLines.map((line) => {
+      const event = this._dispatchEvent("config-lang:before-line-parsed", { line });
+      return event.detail.line;
+    });
+
+    // Find the token-section boundary in the raw lines. A token definition
+    // is a non-indented line starting with "$". We split BEFORE preprocessing
+    // so that comment-stripping and indentation-joining only apply to the
+    // commands section — token values may legitimately contain "#" lines,
+    // blank lines, and leading whitespace.
     let tokenStartIndex = -1;
-    for (let i = 0; i < processedLines.length; i++) {
-      if (processedLines[i].trim().startsWith("$")) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.length > 0 && !/^\s/.test(line) && line.startsWith("$")) {
         tokenStartIndex = i;
         break;
       }
@@ -297,11 +308,11 @@ class CommandSet {
 
     let commandLines, tokenLines;
     if (tokenStartIndex === -1) {
-      commandLines = processedLines;
+      commandLines = this.preprocessLines(lines);
       tokenLines = [];
     } else {
-      commandLines = processedLines.slice(0, tokenStartIndex);
-      tokenLines = processedLines.slice(tokenStartIndex);
+      commandLines = this.preprocessLines(lines.slice(0, tokenStartIndex));
+      tokenLines = lines.slice(tokenStartIndex);
     }
 
     // Parse tokens first (needed for substitution)
@@ -325,9 +336,6 @@ class CommandSet {
     let currentLine = "";
 
     for (let line of lines) {
-      const event = this._dispatchEvent("config-lang:before-line-parsed", { line });
-      line = event.detail.line;
-
       // Skip comments and blank lines
       if (line.trim().startsWith("#") || line.trim() === "") {
         continue;
@@ -382,14 +390,16 @@ class CommandSet {
     let currentValue = [];
 
     for (const line of lines) {
-      if (line.trim().startsWith("$")) {
+      // Only a non-indented line starting with "$" begins a new token.
+      // Indented "$..." lines are treated as part of the previous token's value.
+      if (line.length > 0 && !/^\s/.test(line) && line.startsWith("$")) {
         // Save previous token if exists
         if (currentToken) {
           this.tokens[currentToken] = currentValue.join("\n").trim();
         }
 
         // Start new token
-        currentToken = line.trim().substring(1);
+        currentToken = line.substring(1).trim();
         CommandSet.validateTokenName(currentToken);
         currentValue = [];
       } else {
